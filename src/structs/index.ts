@@ -25,12 +25,9 @@ export type Options = {
   template: {
     type?: string
     onlyBody?: boolean
-    extraInitor?: {
-      liburl: string
-      handler: ((url: string, id: string) => void)
-    }
     // 获取数据地址
-    getDataUrl?: (path: string) => (string | void)
+    getDevDataUrl?: (path: string) => (string | void)
+    getDevDataTransformer?: (res: any) => any
     // 转换之前
     beforeTranspile?: (root: RootNode) => void
     // 获取静态数据

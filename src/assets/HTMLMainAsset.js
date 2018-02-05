@@ -1,10 +1,22 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const HTMLAsset_1 = require("./HTMLAsset");
-const JSAsset_1 = require("./JSAsset");
-const index_1 = require("ody-html-tree/index");
 const util_1 = require("ody-html-tree/util");
 const md5_1 = require("../utils/md5");
+function getDevUrl(url) {
+    return new Promise((resolve, reject) => {
+        var xhr = new XMLHttpRequest();
+        xhr.open('get', url);
+        xhr.onload = () => resolve(xhr.response);
+        xhr.onerror = reject;
+        xhr.send();
+    });
+}
+const devContainer = '<html><body><style>html,body,iframe{height:100%;margin:0;border:0}</style><iframe id="ifr"></iframe><script></script></body></html>';
+function renderHtml(html) {
+    var iframe = document.getElementById('ifr');
+    iframe.contentDocument.write(html);
+}
 class HTMLMainAsset extends HTMLAsset_1.default {
     init() {
         super.init();
@@ -20,46 +32,28 @@ class HTMLMainAsset extends HTMLAsset_1.default {
             }
         }
         let template = this.options.template;
-        let url = template.getDataUrl && template.getDataUrl(this.name);
-        if (url) {
-            let initor = template.extraInitor;
-            if (initor) {
-                let [root] = util_1.getElementByTagName('body', ast);
-                if (!root) {
-                    root = ast;
-                }
-                let asset = this.resolveAsset(initor.liburl, {
-                    dynamic: true
-                }, JSAsset_1.default);
-                asset.skipTransform = true;
-                await asset.process();
-                let elem = new index_1.ElementNode('div');
-                let id = '__wrap__';
-                elem.setAttribute('id', id);
-                elem.style.add({
-                    height: '100%',
-                    display: 'none'
-                });
-                elem.setAttribute('v-show', '__loaded');
-                elem.childNodes = root.childNodes;
-                root.childNodes = [elem];
-                let elem1 = new index_1.ElementNode('script', { src: await asset.getGeneratedUrl() });
-                root.appendChild(elem1);
-                let elem2 = new index_1.ElementNode('script');
-                elem2.appendChild(new index_1.TextNode(`(${getFuncStr(initor.handler)})('${url}','${id}')`));
-                root.appendChild(elem2);
-            }
-        }
+        let url = template.getDevDataUrl && template.getDevDataUrl(this.name);
         if (template.beforeTranspile) {
             template.beforeTranspile(ast);
         }
-        if (template.type) {
-            this.transformToType(ast, template.type);
+        if (url) {
+            let dataName = '__data__';
+            this.transformToType(ast, 'js', dataName);
+            let func = `function(${dataName}){${this.render(ast)} return __html}`;
+            let js = `(${getFuncStr(getDevUrl)})('${url}').then(${getFuncStr(template.getDevDataTransformer)}).then(${func}).then(${getFuncStr(renderHtml)})`;
+            ast = this.parse(devContainer);
+            let [script] = ast.getElementsByTagName('script');
+            script.text(js);
         }
-        if (template.onlyBody) {
-            let [body] = util_1.getElementByTagName('body', ast);
-            if (body) {
-                ast.childNodes = [body];
+        else {
+            if (template.type) {
+                this.transformToType(ast, template.type);
+            }
+            if (template.onlyBody) {
+                let [body] = util_1.getElementByTagName('body', ast);
+                if (body) {
+                    ast.childNodes = [body];
+                }
             }
         }
         return ast;

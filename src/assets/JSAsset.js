@@ -39,7 +39,7 @@ async function getTemplateSerial(asset, segment) {
     return wrapTemplateWithFunction(ret, dataName);
 }
 function wrapTemplateWithFunction(str, dataName = '__data__') {
-    return `function f(${dataName}){${str};return __html}`;
+    return `function f(${dataName}){${str} return __html}`;
 }
 class JSAsset extends Asset_1.default {
     constructor() {

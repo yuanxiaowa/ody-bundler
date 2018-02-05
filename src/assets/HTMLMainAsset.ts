@@ -4,10 +4,26 @@ import CSSAsset from "./CSSAsset";
 import Asset from "../Asset";
 import ComponentAsset from "./ComponentAsset";
 import { RootNode, ElementNode, TextNode } from "ody-html-tree/index";
-import { getElementByTagName } from "ody-html-tree/util";
+import { getElementByTagName, parse } from "ody-html-tree/util";
 import { join } from "path";
 import md5 from "../utils/md5";
 import { CollectRes } from "../structs/index";
+
+function getDevUrl(url: string) {
+  return new Promise((resolve, reject) => {
+    var xhr = new XMLHttpRequest()
+    xhr.open('get', url)
+    xhr.onload = () => resolve(xhr.response)
+    xhr.onerror = reject
+    xhr.send()
+  })
+}
+
+const devContainer = '<html><body><style>html,body,iframe{height:100%;margin:0;border:0}</style><iframe id="ifr"></iframe><script></script></body></html>'
+function renderHtml(html:string) {
+  var iframe = <HTMLIFrameElement>document.getElementById('ifr')
+  iframe.contentDocument.write(html)
+}
 
 export default class HTMLMainAsset extends HTMLAsset {
   init() {
@@ -24,46 +40,27 @@ export default class HTMLMainAsset extends HTMLAsset {
       }
     }
     let template = this.options.template
-    let url = template.getDataUrl && template.getDataUrl(this.name)
-    if (url) {
-      let initor = template.extraInitor
-      if (initor) {
-        let [root] = getElementByTagName('body', ast)
-        if (!root) {
-          root = ast
-        }
-        let asset = this.resolveAsset(initor.liburl, {
-          dynamic: true
-        }, JSAsset)
-        asset.skipTransform = true
-        await asset.process()
-        let elem = new ElementNode('div')
-        let id = '__wrap__'
-        elem.setAttribute('id', id)
-        elem.style.add({
-          height: '100%',
-          display: 'none'
-        })
-        elem.setAttribute('v-show', '__loaded')
-        elem.childNodes = root.childNodes
-        root.childNodes = [elem]
-        let elem1 = new ElementNode('script', { src: await asset.getGeneratedUrl() })
-        root.appendChild(elem1)
-        let elem2 = new ElementNode('script')
-        elem2.appendChild(new TextNode(`(${getFuncStr(initor.handler)})('${url}','${id}')`))
-        root.appendChild(elem2)
-      }
-    }
+    let url = template.getDevDataUrl && template.getDevDataUrl(this.name)
     if (template.beforeTranspile) {
       template.beforeTranspile(ast)
     }
-    if (template.type) {
-      this.transformToType(ast, template.type)
-    }
-    if (template.onlyBody) {
-      let [body] = getElementByTagName('body', ast)
-      if (body) {
-        ast.childNodes = [body]
+    if (url) {
+      let dataName = '__data__'
+      this.transformToType(ast, 'js', dataName)
+      let func = `function(${dataName}){${this.render(ast)} return __html}`
+      let js = `(${getFuncStr(getDevUrl)})('${url}').then(${getFuncStr(template.getDevDataTransformer)}).then(${func}).then(${getFuncStr(renderHtml)})`
+      ast = this.parse(devContainer)
+      let [script] = ast.getElementsByTagName('script')
+      script.text(js)
+    } else {
+      if (template.type) {
+        this.transformToType(ast, template.type)
+      }
+      if (template.onlyBody) {
+        let [body] = getElementByTagName('body', ast)
+        if (body) {
+          ast.childNodes = [body]
+        }
       }
     }
     return ast

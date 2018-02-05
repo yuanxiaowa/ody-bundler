@@ -1,6 +1,6 @@
 {
   "name": "ody-bundler",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -20,7 +20,7 @@
     "fs-extra": "^5.0.0",
     "glob": "^7.1.2",
     "imagemin": "^5.3.1",
-    "ody-html-tree": "^1.0.0",
+    "ody-html-tree": "^1.0.2",
     "ody-transpiler": "^1.0.4",
     "physical-cpu-count": "^2.0.0",
     "postcss": "^6.0.16",

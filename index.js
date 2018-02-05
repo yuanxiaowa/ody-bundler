@@ -54,31 +54,12 @@ var defaultOptions = {
             watch: true,
             map: true,
             template: {
-                type: 'vue',
-                extraInitor: {
-                    liburl: 'https://cdn.bootcss.com/vue/2.5.13/vue.js',
-                    handler(url, el) {
-                        new Promise((resolve, reject) => {
-                            var xhr = new XMLHttpRequest();
-                            xhr.open('get', url);
-                            xhr.onload = () => resolve(xhr.response);
-                            xhr.onerror = reject;
-                            xhr.send();
-                        }).then((res) => {
-                            var data = JSON.parse(res);
-                            if (data.code === 1) {
-                                return data.data;
-                            }
-                            throw data;
-                        }).then(data => {
-                            data.__loaded = true;
-                            // @ts-ignore
-                            new Vue({
-                                data() { return data; },
-                                el
-                            });
-                        });
+                getDevDataTransformer(res) {
+                    var data = JSON.parse(res);
+                    if (data.code === 1) {
+                        return data.data;
                     }
+                    throw data;
                 }
             },
             hashContent: false,
