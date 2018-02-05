@@ -19,7 +19,7 @@ function getDevUrl(url: string) {
   })
 }
 
-const devContainer = '<html><body><style>html,body,iframe{height:100%;margin:0;border:0}</style><iframe id="ifr"></iframe><script></script></body></html>'
+const devContainer = '<html><body><style>html,body{height:100%;margin:0}iframe{width:100%;height:100%;border:0}</style><iframe id="ifr"></iframe><script></script></body></html>'
 function renderHtml(html:string) {
   var iframe = <HTMLIFrameElement>document.getElementById('ifr')
   iframe.contentDocument.write(html)
