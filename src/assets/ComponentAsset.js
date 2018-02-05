@@ -6,7 +6,6 @@ const Path = require("path");
 const HTMLAsset_1 = require("./HTMLAsset");
 const JSAsset_1 = require("./JSAsset");
 const CSSAsset_1 = require("./CSSAsset");
-const index_1 = require("ody-html-tree/index");
 const fs_extra_1 = require("fs-extra");
 const md5_1 = require("../utils/md5");
 class ComponentAsset extends Asset_1.default {
@@ -119,7 +118,7 @@ class ComponentAsset extends Asset_1.default {
 exports.default = ComponentAsset;
 function collectSlots(nodes, ret) {
     nodes.forEach(node => {
-        if (node instanceof index_1.ElementNode) {
+        if (node.isElement()) {
             if (node.hasAttribute('slot')) {
                 let name = node.getAttribute('slot');
                 node.removeAttribute('slot');

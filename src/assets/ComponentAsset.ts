@@ -117,7 +117,7 @@ export default class ComponentAsset extends Asset {
 
 function collectSlots(nodes: Node[], ret: CollectedSlots) {
   nodes.forEach(node => {
-    if (node instanceof ElementNode) {
+    if (node.isElement()) {
       if (node.hasAttribute('slot')) {
         let name = node.getAttribute('slot')
         node.removeAttribute('slot')

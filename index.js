@@ -35,7 +35,11 @@ var defaultOptions = {
             return url;
         },
         globals: {},
-        uglifyOptions: {}
+        uglifyOptions: {
+            compress: {
+                global_defs: {}
+            }
+        }
     },
     getOutputMask(name, type) {
     },

@@ -41,7 +41,7 @@ async function getTemplateSerial(asset: HTMLAsset, segment?: string) {
   var ret = asset.render(root)
   return wrapTemplateWithFunction(ret, dataName)
 }
-function wrapTemplateWithFunction(str:string, dataName = '__data__') {
+function wrapTemplateWithFunction(str: string, dataName = '__data__') {
   return `function f(${dataName}){${str};return __html}`
 }
 export default class JSAsset extends Asset {
@@ -84,9 +84,9 @@ export default class JSAsset extends Asset {
           }
           asset = this.resovleAssetWithExt(path, dep)
           asset.skipTransform = !asset.isSingleFile
+          await asset.process()
         }
-        await asset.loadIfNeeded()
-        return asset
+        return asset.name
       },
       resolveId: (id: string, parent?: string) => {
         if (!parent) {
@@ -109,12 +109,14 @@ export default class JSAsset extends Asset {
           return ret.path + (ret.segment ? '#' + ret.segment : '')
         }
       },
-      transform: async (asset: Asset, id: string) => {
+      transform: async (source: string, id: string) => {
+        var arr = id.split('#')
+        var path = arr[0]
+        var segment = arr[1]
+        var asset = id === this.name ? this : this.depAssets.get(path)
         var map = new SourceMapGenerator({
-          file: asset.name
+          file: path
         })
-        var source: any
-        var segment = id.split('#')[1]
         if (id === this.name) {
           let names = new Set<string>()
           let exportNameds: [string, string][]
@@ -129,6 +131,7 @@ export default class JSAsset extends Asset {
             })
           })
           imports += [...names].map(name => `import "${name.replace(/\\/g, '/')}";`).join('')
+          source = <string>asset.contents
           map.addMapping({
             source: id,
             generated: {
@@ -141,13 +144,14 @@ export default class JSAsset extends Asset {
             }
           })
           source = imports + source
-        }
-        if (IMG_RE.test(asset.name)) {
-          await asset.process()
-          source = `export default var __url = ${asset.getGeneratedUrl('js')}` + (segment ? '#' + segment : '')
-        } else if (asset.name.endsWith('html')) {
+        } else if (IMG_RE.test(path)) {
+          let __url = await asset.getGeneratedUrl('js')
+          source = `export default ${__url}` + (segment ? `+'#${segment}'` : '')
+        } else if (path.endsWith('html')) {
           let func = await getTemplateSerial(<HTMLAsset>asset, segment)
           source = 'export default ' + func
+        } else {
+          source = <string>asset.contents
         }
         return {
           code: source,
@@ -211,7 +215,9 @@ export default class JSAsset extends Asset {
     }
     let uglifyOptions = Object.assign({}, this.options.script.uglifyOptions)
     if (this.options.map) {
-      uglifyOptions.inSourceMap = map.toUrl()
+      uglifyOptions.sourceMap = {
+        content: map
+      }
     }
     if (!uglifyOptions.compress.global_defs) {
       uglifyOptions.compress.global_defs = {}
@@ -221,10 +227,15 @@ export default class JSAsset extends Asset {
       NODE_ENV: this.options.env
     })
     let result = uglifyJS.minify(code, uglifyOptions)
-    this.contents = result.code
-    if (this.options.map) {
-      code += `\n//# sourceMappingURL=${map.toUrl()}`
+    // @ts-ignore
+    if (result.error) {
+      // @ts-ignore
+      throw result.error
     }
+    if (this.options.map && result.map) {
+      code += `\n//# sourceMappingURL=${result.map}`
+    }
+    this.contents = result.code
   }
   processRegex([name, g]: string[]) {
     if (name) {
@@ -241,6 +252,7 @@ export default class JSAsset extends Asset {
     if (url.startsWith('<')) {
       let path = this.getInlineContentName('html', url)
       asset = <HTMLAsset>this.resolveInlineAsset(path, HTMLAsset, url)
+      await asset.process()
       func = await getTemplateSerial(asset)
     } else if (url.startsWith('#') && this.depAst) {
       let node = this.depAst.getElementById(url.substring(1))
