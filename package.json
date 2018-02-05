@@ -1,6 +1,6 @@
 {
   "name": "ody-bundler",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -28,7 +28,7 @@
     "postcss-url": "^7.3.0",
     "postcss-value-parser": "^3.3.0",
     "ramda": "^0.25.0",
-    "render-static": "^1.0.0",
+    "render-static": "^1.0.1",
     "request": "^2.83.0",
     "request-promise-native": "^1.0.5",
     "rollup": "^0.55.0",
