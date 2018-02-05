@@ -41,7 +41,7 @@ class HTMLMainAsset extends HTMLAsset_1.default {
             this.transformToType(ast, 'js', dataName);
             let func = `function(${dataName}){${this.render(ast)} return __html}`;
             let js = `(${getFuncStr(getDevUrl)})('${url}').then(${getFuncStr(template.getDevDataTransformer)}).then(${func}).then(${getFuncStr(renderHtml)})`;
-            js = js.replace(/(<\/)(script>)/g, '$0`+`$1');
+            js = js.replace(/(<\/)(script>)/g, '$1`+`$2');
             ast = this.parse(devContainer);
             let [script] = ast.getElementsByTagName('script');
             script.text(js);
