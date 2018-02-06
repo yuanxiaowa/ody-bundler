@@ -251,22 +251,23 @@ export default class Asset extends EventEmitter {
       .replace(/\\/g, '/') + '.' + this.type
   }
   async getGeneratedUrl(type = 'html') {
+    var url: any
     if (this.options.getGeneratedUrl) {
-      let url = await this.options.getGeneratedUrl(this, type)
-      if (url) {
-        return url
-      }
+      url = await this.options.getGeneratedUrl(this)
     }
-    if (this.options.dynamicDomain) {
+    if (!url) {
+      url = this.generatedUrl
+    }
+    if (this.options.dynamicDomain && !isUrl(url)) {
       if (type === 'html') {
-        return `{{${this.options.dynamicDomain}}}${this.generatedUrl}`
+        return `{{${this.options.dynamicDomain}}}${url}`
       } else if (type === 'js') {
-        return `window["${this.options.dynamicDomain}"]+'${this.generatedUrl}'`
+        return `window["${this.options.dynamicDomain}"]+'${url}'`
       }
     } else if (type === 'js') {
-      return `'${this.generatedUrl}'`
+      return `'${url}'`
     }
-    return this.generatedUrl
+    return url
   }
   resolveMask(name: string) {
     let items = this.name.split(Path.sep)

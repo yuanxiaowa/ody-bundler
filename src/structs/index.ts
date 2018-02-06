@@ -76,7 +76,7 @@ export type Options = {
     )[]
   }
   // 获取资源生成的地址
-  getGeneratedUrl?: (asset: Asset, type: string) => Promise<string | void>
+  getGeneratedUrl?: (asset: Asset) => Promise<string | void>
 }
 
 export type DepNormal = {
