@@ -426,7 +426,13 @@ class HTMLAsset extends Asset_1.default {
         return ast;
     }
     transformToType(ast, type, data) {
-        util_2.transform(type, ast, data);
+        var transpiler = util_2.getTranspiler(type, data);
+        if (transpiler) {
+            if (transpiler.filterMapping && this.options.template.filters) {
+                Object.assign(transpiler.filterMapping, this.options.template.filters);
+            }
+            transpiler.handle(ast);
+        }
     }
     render(ast) {
         return (this.options.minify ? util_1.renderMini : util_1.render)([ast]);

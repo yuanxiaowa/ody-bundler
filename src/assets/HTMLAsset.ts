@@ -12,7 +12,7 @@ import * as Path from 'path'
 import ComponentAsset from "./ComponentAsset";
 import CSSAsset from "./CSSAsset";
 import ImageAsset from "./ImageAsset";
-import { transform } from "ody-transpiler/util";
+import { getTranspiler } from "ody-transpiler/util";
 
 
 const ATTRS = {
@@ -421,7 +421,13 @@ export default class HTMLAsset extends Asset {
     return ast
   }
   transformToType(ast: RootNode, type: string, data?: string) {
-    transform(type, ast, data)
+    var transpiler:any = getTranspiler(type, data)
+    if (transpiler) {
+      if (transpiler.filterMapping && this.options.template.filters) {
+        Object.assign(transpiler.filterMapping, this.options.template.filters)
+      }
+      transpiler.handle(ast)
+    }
   }
   render(ast: ElementNode) {
     return (this.options.minify ? renderMini : render)([ast])

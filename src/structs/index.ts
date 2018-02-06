@@ -23,7 +23,11 @@ export type Options = {
   dynamicDomain?: string
   regexs: KeyMap<RegExp>
   template: {
-    type?: string
+    type?: 'js' | 'vue' | 'ng' | 'php' | 'jstl'
+    // 过滤器
+    filters?: {
+      [name: string]: string
+    }
     onlyBody?: boolean
     // 获取数据地址
     getDevDataUrl?: (path: string) => (string | void)

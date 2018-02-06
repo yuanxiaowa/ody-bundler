@@ -32,19 +32,21 @@ class HTMLMainAsset extends HTMLAsset_1.default {
             }
         }
         let template = this.options.template;
-        let url = template.getDevDataUrl && template.getDevDataUrl(this.name);
         if (template.beforeTranspile) {
             template.beforeTranspile(ast);
         }
-        if (url) {
-            let dataName = '__data__';
-            this.transformToType(ast, 'js', dataName);
-            let func = `function(${dataName}){${this.render(ast)} return __html}`;
-            let js = `(${getFuncStr(getDevUrl)})('${url}').then(${getFuncStr(template.getDevDataTransformer)}).then(${func}).then(${getFuncStr(renderHtml)})`;
-            js = js.replace(/(<\/)(script>)/g, '$1`+`$2');
-            ast = this.parse(devContainer);
-            let [script] = ast.getElementsByTagName('script');
-            script.text(js);
+        if (template.type === 'js') {
+            let url = template.getDevDataUrl && template.getDevDataUrl(this.name);
+            if (url) {
+                let dataName = '__data__';
+                this.transformToType(ast, 'js', dataName);
+                let func = `function(${dataName}){${this.render(ast)} return __html}`;
+                let js = `(${getFuncStr(getDevUrl)})('${url}').then(${getFuncStr(template.getDevDataTransformer)}).then(${func}).then(${getFuncStr(renderHtml)})`;
+                js = js.replace(/(<\/)(script>)/g, '$1`+`$2');
+                ast = this.parse(devContainer);
+                let [script] = ast.getElementsByTagName('script');
+                script.text(js);
+            }
         }
         else {
             if (template.type) {

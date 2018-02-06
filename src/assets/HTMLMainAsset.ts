@@ -20,7 +20,7 @@ function getDevUrl(url: string) {
 }
 
 const devContainer = '<html><body><style>html,body{height:100%;margin:0}iframe{width:100%;height:100%;border:0}</style><iframe id="ifr"></iframe><script></script></body></html>'
-function renderHtml(html:string) {
+function renderHtml(html: string) {
   var iframe = <HTMLIFrameElement>document.getElementById('ifr')
   iframe.contentDocument.write(html)
 }
@@ -40,19 +40,21 @@ export default class HTMLMainAsset extends HTMLAsset {
       }
     }
     let template = this.options.template
-    let url = template.getDevDataUrl && template.getDevDataUrl(this.name)
     if (template.beforeTranspile) {
       template.beforeTranspile(ast)
     }
-    if (url) {
-      let dataName = '__data__'
-      this.transformToType(ast, 'js', dataName)
-      let func = `function(${dataName}){${this.render(ast)} return __html}`
-      let js = `(${getFuncStr(getDevUrl)})('${url}').then(${getFuncStr(template.getDevDataTransformer)}).then(${func}).then(${getFuncStr(renderHtml)})`
-      js = js.replace(/(<\/)(script>)/g, '$1`+`$2')
-      ast = this.parse(devContainer)
-      let [script] = ast.getElementsByTagName('script')
-      script.text(js)
+    if (template.type === 'js') {
+      let url = template.getDevDataUrl && template.getDevDataUrl(this.name)
+      if (url) {
+        let dataName = '__data__'
+        this.transformToType(ast, 'js', dataName)
+        let func = `function(${dataName}){${this.render(ast)} return __html}`
+        let js = `(${getFuncStr(getDevUrl)})('${url}').then(${getFuncStr(template.getDevDataTransformer)}).then(${func}).then(${getFuncStr(renderHtml)})`
+        js = js.replace(/(<\/)(script>)/g, '$1`+`$2')
+        ast = this.parse(devContainer)
+        let [script] = ast.getElementsByTagName('script')
+        script.text(js)
+      }
     } else {
       if (template.type) {
         this.transformToType(ast, template.type)

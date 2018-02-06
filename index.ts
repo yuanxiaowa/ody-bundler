@@ -34,6 +34,8 @@ var defaultOptions: OptionsWithEnv = {
     digits: /^\d+$/
   },
   template: {
+    type: 'js',
+    filters: {},
     getStaticData(path) {
       return {}
     }

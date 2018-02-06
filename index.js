@@ -25,6 +25,8 @@ var defaultOptions = {
         digits: /^\d+$/
     },
     template: {
+        type: 'js',
+        filters: {},
         getStaticData(path) {
             return {};
         }
