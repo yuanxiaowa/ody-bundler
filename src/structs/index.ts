@@ -45,6 +45,9 @@ export type Options = {
     globals?: {
       [name: string]: string
     }
+    global_defs?: {
+      [name: string]: any
+    }
   }
   style: {
     // postcss插件

@@ -89,7 +89,7 @@ export default class CSSAsset extends Asset {
                   loc: decl.source.start
                 }, ImageAsset)
                 _promises.push(asset.process().then(() => {
-                  node.nodes[0].value = asset.generatedPath
+                  node.nodes[0].value = asset.generatedUrl
                 }))
               }
             }

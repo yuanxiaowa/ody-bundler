@@ -1,5 +1,5 @@
 import Asset from "../Asset";
-import { parse, render, renderMini, traverseElementNodes } from 'ody-html-tree/util'
+import { parse, render, renderMini, traverseElementNodes, getElementByTagName } from 'ody-html-tree/util'
 import { RootNode, ElementNode, Node } from "ody-html-tree/index";
 import { Options, Dep, CollectedSlots, CollectRes } from "../structs/index";
 import Bundler from "../Bundler";
@@ -13,6 +13,22 @@ import ComponentAsset from "./ComponentAsset";
 import CSSAsset from "./CSSAsset";
 import ImageAsset from "./ImageAsset";
 import { getTranspiler } from "ody-transpiler/util";
+
+function getDevUrl(url: string) {
+  return new Promise((resolve, reject) => {
+    var xhr = new XMLHttpRequest()
+    xhr.open('get', url)
+    xhr.onload = () => resolve(xhr.response)
+    xhr.onerror = reject
+    xhr.send()
+  })
+}
+
+const devContainer = '<html><head><meta name="viewport" content="width=device-width, initial-scale=1.0"></head><body><style>html,body{height:100%;margin:0}iframe{width:100%;height:100%;border:0}</style><iframe id="ifr"></iframe><script></script></body></html>'
+function renderHtml(html: string) {
+  var iframe = <HTMLIFrameElement>document.getElementById('ifr')
+  iframe.contentDocument.write(html)
+}
 
 
 const ATTRS = {
@@ -90,7 +106,7 @@ export default class HTMLAsset extends Asset {
             } else {
               node.setAttribute('src', loadingIconPath)
             }
-            promises.push((async() => {
+            promises.push((async () => {
               await assetDep.process()
               node.setAttribute('data-src', await assetDep.getGeneratedUrl())
             })())
@@ -98,15 +114,15 @@ export default class HTMLAsset extends Asset {
             let assetIcon = this.resolveAsset(p.path, {
               dynamic: true
             }, ImageAsset)
-            promises.push((async() => {
+            promises.push((async () => {
               await Promise.all([assetDep.process(), assetIcon.process()])
               let [src1, src2] = await Promise.all([assetIcon.getGeneratedUrl(), assetDep.getGeneratedUrl()])
               node.setAttribute('src', src1 + (p.segment ? '#' + p.segment : ''))
-                node.setAttribute('data-src', src2)
+              node.setAttribute('data-src', src2)
             })())
           }
         } else {
-          promises.push((async() => {
+          promises.push((async () => {
             await assetDep.process()
             let src = await assetDep.getGeneratedUrl()
             node.setAttribute('src', src + (ret.segment ? '#' + ret.segment : ''))
@@ -126,7 +142,7 @@ export default class HTMLAsset extends Asset {
                   dynamic: true
                 }, ImageAsset)
                 assetDep.isSingleFile = true
-                ps.push((async() => {
+                ps.push((async () => {
                   await assetDep.process()
                   return <[string, string]>[await assetDep.getGeneratedUrl(), x]
                 })())
@@ -146,7 +162,7 @@ export default class HTMLAsset extends Asset {
         let assetDep = this.resolveAsset(ret.path, {
           dynamic: true
         }, ImageAsset)
-        promises.push((async() => {
+        promises.push((async () => {
           await assetDep.process()
           let src = await assetDep.getGeneratedUrl()
           // @ts-ignore
@@ -168,7 +184,7 @@ export default class HTMLAsset extends Asset {
             }
             let assetDep = <JSAsset>this.resolveAsset(ret.path, dep, JSAsset)
             assetDep.isSingleFile = assetDep.isSingleFile || !dep.included
-            let handle = async() => {
+            let handle = async () => {
               await assetDep.process()
               if (dep.included) {
                 node.removeAttribute('__inline')
@@ -193,7 +209,11 @@ export default class HTMLAsset extends Asset {
           }
         } else {
           let path = this.getInlineContentName('.js', node.textContent, node.source.filename)
-          let assetDep = <JSAsset>this.resolveInlineAsset(path, JSInlineAsset, node.textContent)
+          let assetDep = <JSInlineAsset>this.resolveInlineAsset(path, JSInlineAsset, node.textContent)
+          if (node.hasAttribute('__vars')) {
+            node.removeAttribute('__vars')
+            assetDep.onlyVars = true
+          }
           assetDep.depAst = ast
           promises.push(assetDep.process().then(() => {
             // @ts-ignore
@@ -218,7 +238,7 @@ export default class HTMLAsset extends Asset {
               let isMain = node.hasAttribute('__main')
               let assetDep = <CSSAsset>this.resolveAsset(ret.path, dep, CSSAsset)
               assetDep.isSingleFile = assetDep.isSingleFile || !dep.included
-              let handle = async() => {
+              let handle = async () => {
                 await assetDep.process()
                 if (dep.included) {
                   node.removeAttribute('__inline')
@@ -244,7 +264,7 @@ export default class HTMLAsset extends Asset {
             } else if (rel.includes('icon')) {
               let assetDep = this.resolveAsset(ret.path, dep, ImageAsset)
               assetDep.isSingleFile = true
-              promises.push((async() => {
+              promises.push((async () => {
                 await assetDep.process()
                 node.setAttribute('href', await assetDep.getGeneratedUrl())
               })())
@@ -275,9 +295,10 @@ export default class HTMLAsset extends Asset {
         }
       }
       if ((tag === 'video' || tag === 'audio' || tag === 'source' || tag === 'embed') && node.hasAttribute('src')) {
-        let assetDep = this.resovleAssetWithExt(node.getAttribute('src'))
+        let ret = this.resolveNodePath(node, node.getAttribute('src'))
+        let assetDep = this.resovleAssetWithExt(ret.path)
         assetDep.isSingleFile = true
-        promises.push((async() => {
+        promises.push((async () => {
           await assetDep.process()
           node.setAttribute('src', await assetDep.getGeneratedUrl())
         })())
@@ -287,7 +308,7 @@ export default class HTMLAsset extends Asset {
         if (path) {
           let assetDep = this.resolveAsset(path, { dynamic: true }, ImageAsset)
           assetDep.isSingleFile = true
-          promises.push((async() => {
+          promises.push((async () => {
             await assetDep.process()
             node.setAttribute('poster', await assetDep.getGeneratedUrl())
           })())
@@ -340,6 +361,7 @@ export default class HTMLAsset extends Asset {
             node.children.forEach(node => {
               if (node.hasAttribute('slot-scope')) {
                 node.external.needRender = true
+                // @ts-ignore
                 renderData([node], {})
               }
             })
@@ -411,6 +433,7 @@ export default class HTMLAsset extends Asset {
   }
   async transformWithData(data: any, collectRes: CollectRes, collectedSlots?: CollectedSlots): Promise<RootNode> {
     var root = this.ast.clone()
+    // @ts-ignore
     renderData(root.childNodes, data)
     await this.handleCI(root, data, collectRes, collectedSlots)
     return root
@@ -421,7 +444,7 @@ export default class HTMLAsset extends Asset {
     return ast
   }
   transformToType(ast: RootNode, type: string, data?: string) {
-    var transpiler:any = getTranspiler(type, data)
+    var transpiler: any = getTranspiler(type, data)
     if (transpiler) {
       if (transpiler.filterMapping && this.options.template.filters) {
         Object.assign(transpiler.filterMapping, this.options.template.filters)
@@ -432,4 +455,68 @@ export default class HTMLAsset extends Asset {
   render(ast: ElementNode) {
     return (this.options.minify ? renderMini : render)([ast])
   }
+  async processAst(ast: RootNode, collectRes: CollectRes) {
+    if (this.mainJSAsset || this.mainCSSAsset) {
+      if (this.mainJSAsset) {
+        await this.mainJSHandler(collectRes.scripts)
+      }
+      if (this.mainCSSAsset) {
+        await this.mainCSSHandler(collectRes.styles)
+      }
+    }
+    let template = this.options.template
+    if (template.beforeTranspile) {
+      template.beforeTranspile(ast)
+    }
+    if (template.type === 'js') {
+      let url = template.getDevDataUrl && template.getDevDataUrl(this.name)
+      if (url) {
+        let dataName = '__data__'
+        this.transformToType(ast, 'js', dataName)
+        let func = `function(${dataName}){${this.render(ast)} return __html}`
+        let js = `(${getFuncStr(getDevUrl)})('${url}').then(${getFuncStr(template.getDevDataTransformer)}).then(${func}).then(${getFuncStr(renderHtml)})`
+        js = js.replace(/(<\/)(script>)/g, '$1`+`$2')
+        ast = this.parse(devContainer)
+        let [script] = ast.getElementsByTagName('script')
+        script.text(js)
+      }
+    } else {
+      if (template.type) {
+        this.transformToType(ast, template.type)
+      }
+      if (template.onlyBody) {
+        let [body] = getElementByTagName('body', ast)
+        if (body) {
+          ast.childNodes = body.childNodes
+        }
+      }
+    }
+    return ast
+  }
+  async process() {
+    if (this.isSingleFile) {
+      if (!this.contents) {
+        await super.process()
+        var collectRes: CollectRes = {
+          styles: [],
+          scripts: []
+        }
+        var root = await this.processWithData(this.options.template.getStaticData(this.name), collectRes)
+        await this.processResources(root)
+        root = await this.processAst(root, collectRes)
+        this.contents = this.render(root)
+        this.hash = md5(this.contents)
+      }
+    } else {
+      return super.process()
+    }
+  }
+}
+
+function getFuncStr(func: Function) {
+  var str = func.toString()
+  if (!/^(\(|function\b)/.test(str)) {
+    str = 'function ' + str
+  }
+  return str
 }

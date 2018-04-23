@@ -191,6 +191,10 @@ class HTMLAsset extends Asset_1.default {
                 else {
                     let path = this.getInlineContentName('.js', node.textContent, node.source.filename);
                     let assetDep = this.resolveInlineAsset(path, JSInlineAsset_1.default, node.textContent);
+                    if (node.hasAttribute('__vars')) {
+                        node.removeAttribute('__vars');
+                        assetDep.onlyVars = true;
+                    }
                     assetDep.depAst = ast;
                     promises.push(assetDep.process().then(() => {
                         // @ts-ignore
@@ -278,7 +282,8 @@ class HTMLAsset extends Asset_1.default {
                 }
             }
             if ((tag === 'video' || tag === 'audio' || tag === 'source' || tag === 'embed') && node.hasAttribute('src')) {
-                let assetDep = this.resovleAssetWithExt(node.getAttribute('src'));
+                let ret = this.resolveNodePath(node, node.getAttribute('src'));
+                let assetDep = this.resovleAssetWithExt(ret.path);
                 assetDep.isSingleFile = true;
                 promises.push((async () => {
                     await assetDep.process();
@@ -340,6 +345,7 @@ class HTMLAsset extends Asset_1.default {
                         node.children.forEach(node => {
                             if (node.hasAttribute('slot-scope')) {
                                 node.external.needRender = true;
+                                // @ts-ignore
                                 render_static_1.renderData([node], {});
                             }
                         });
@@ -416,6 +422,7 @@ class HTMLAsset extends Asset_1.default {
     }
     async transformWithData(data, collectRes, collectedSlots) {
         var root = this.ast.clone();
+        // @ts-ignore
         render_static_1.renderData(root.childNodes, data);
         await this.handleCI(root, data, collectRes, collectedSlots);
         return root;

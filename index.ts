@@ -46,11 +46,8 @@ var defaultOptions: OptionsWithEnv = {
       return url
     },
     globals: {},
-    uglifyOptions: {
-      compress: {
-        global_defs: {}
-      }
-    }
+    global_defs: {},
+    uglifyOptions: {}
   },
   getOutputMask(name, type) {
   },
@@ -110,6 +107,13 @@ export default function bundle(options: OptionsWithEnv) {
       opts = ramda.mergeDeepRight(opts, envs[env])
     }
   }
+  if (!opts.publicURL.endsWith('/')) {
+    opts.publicURL = opts.publicURL + '/'
+  }
+  opts.script.global_defs = Object.assign(opts.script.global_defs, {
+    'process.env.NODE_ENV': opts.env,
+    NODE_ENV: opts.env
+  })
   var bundler = new Bundler(<Options>opts)
   return bundler.bundle()
 }

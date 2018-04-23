@@ -37,11 +37,8 @@ var defaultOptions = {
             return url;
         },
         globals: {},
-        uglifyOptions: {
-            compress: {
-                global_defs: {}
-            }
-        }
+        global_defs: {},
+        uglifyOptions: {}
     },
     getOutputMask(name, type) {
     },
@@ -100,6 +97,13 @@ function bundle(options) {
             opts = ramda.mergeDeepRight(opts, envs[env]);
         }
     }
+    if (!opts.publicURL.endsWith('/')) {
+        opts.publicURL = opts.publicURL + '/';
+    }
+    opts.script.global_defs = Object.assign(opts.script.global_defs, {
+        'process.env.NODE_ENV': opts.env,
+        NODE_ENV: opts.env
+    });
     var bundler = new Bundler_1.default(opts);
     return bundler.bundle();
 }

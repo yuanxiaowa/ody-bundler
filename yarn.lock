@@ -1702,9 +1702,16 @@ ody-html-tree@^1.0.0:
     htmlparser2 "^3.9.2"
     ramda "^0.25.0"
 
-ody-transpiler@^1.0.0:
-  version "1.0.0"
-  resolved "http://registry.npm.taobao.org/ody-transpiler/download/ody-transpiler-1.0.0.tgz#95d13ddaf2fecb64f8d24952c8fd4157e3550dbc"
+ody-html-tree@^1.0.2:
+  version "1.0.2"
+  resolved "http://registry.npm.taobao.org/ody-html-tree/download/ody-html-tree-1.0.2.tgz#36eb2bf97e7359736da9dad8ca9333e99c5477fc"
+  dependencies:
+    htmlparser2 "^3.9.2"
+    ramda "^0.25.0"
+
+ody-transpiler@^1.0.4:
+  version "1.0.6"
+  resolved "http://registry.npm.taobao.org/ody-transpiler/download/ody-transpiler-1.0.6.tgz#766bcfa485b49c234dfe512d89ecae956ebbf2bf"
   dependencies:
     babel-core "^6.26.0"
     babel-generator "^6.26.0"
@@ -2131,9 +2138,9 @@ remove-trailing-separator@^1.0.1:
   version "1.1.0"
   resolved "http://registry.npm.taobao.org/remove-trailing-separator/download/remove-trailing-separator-1.1.0.tgz#c24bce2a283adad5bc3f58e0d48249b92379d8ef"
 
-render-static@^1.0.0:
-  version "1.0.0"
-  resolved "http://registry.npm.taobao.org/render-static/download/render-static-1.0.0.tgz#35e2faa69ec2178568a0dc7379191d4fd8ae5da4"
+render-static@^1.0.1:
+  version "1.0.1"
+  resolved "http://registry.npm.taobao.org/render-static/download/render-static-1.0.1.tgz#fac725348dbd8553f016b581ee3a9ca09a81def0"
   dependencies:
     moment "^2.19.4"
     ody-html-tree "^1.0.0"

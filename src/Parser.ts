@@ -4,7 +4,6 @@ import Bundler from "./Bundler";
 import * as Path from 'path'
 import RawAsset from "./assets/RawAsset";
 import ComponentAsset from "./assets/ComponentAsset";
-import HTMLMainAsset from "./assets/HTMLMainAsset";
 
 export default class Parser {
   extensions: {

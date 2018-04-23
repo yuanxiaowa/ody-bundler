@@ -46,6 +46,7 @@ function wrapTemplateWithFunction(str: string, dataName = '__data__') {
 }
 export default class JSAsset extends Asset {
   contents: string
+  imgType = 'js'
   extraAssets: {
     [name: string]: (Asset | [Asset, string])[]
   } = {}
@@ -145,7 +146,7 @@ export default class JSAsset extends Asset {
           })
           source = imports + source
         } else if (IMG_RE.test(path)) {
-          let __url = await asset.getGeneratedUrl('js')
+          let __url = await asset.getGeneratedUrl(this.imgType)
           source = `export default ${__url}` + (segment ? `+'#${segment}'` : '')
         } else if (path.endsWith('html')) {
           let func = await getTemplateSerial(<HTMLAsset>asset, segment)
@@ -170,7 +171,8 @@ export default class JSAsset extends Asset {
     var { code, map } = await bundle.generate({
       format: 'iife',
       sourcemap: this.options.map ? 'inline' : false,
-      globals: this.options.script.globals
+      globals: this.options.script.globals,
+      banner: this.options.minify ? '' : this.getBanner()
     })
     var ast = parse(code, {
       sourceType: 'module',
@@ -213,29 +215,58 @@ export default class JSAsset extends Asset {
       code = result.code
       map = result.map
     }
+    if (this.options.minify) {
+      let ret = this.minify(code, map)
+      code = ret.code
+      map = ret.map
+    }
+    if (this.options.map && map) {
+      code += `\n//# sourceMappingURL=${map}`
+    }
+    this.contents = code
+  }
+  getBanner() {
+    var vars = {}
+    var defs = this.options.script.global_defs
+    return Object.keys(defs).map(key => {
+      var ret = ''
+      if (key.includes('.')) {
+        let items = key.split('.')
+        key = items[0]
+        if (!vars[key]) {
+          ret += `var ${key}={};`
+          vars[key] = true
+        }
+        items.slice(1, -1).forEach((key, i) => {
+          let r = items.slice(0, i + 2).join('.')
+          ret += `if(${r} === undefined){${r} = {}}`
+        })
+        ret += `${key}=${JSON.stringify(defs[key])}`
+      } else {
+        ret = `var ${key}=${JSON.stringify(defs[key])}`
+        vars[key] = true
+      }
+      return ret
+    }).join(';') + ';'
+  }
+  minify(code: string, map?: any) {
     let uglifyOptions = Object.assign({}, this.options.script.uglifyOptions)
     if (this.options.map) {
       uglifyOptions.sourceMap = {
         content: map
       }
     }
-    if (!uglifyOptions.compress.global_defs) {
-      uglifyOptions.compress.global_defs = {}
-    }
-    Object.assign(uglifyOptions.compress.global_defs, {
-      'process.env.NODE_ENV': this.options.env,
-      NODE_ENV: this.options.env
-    })
+    uglifyOptions.compress.global_defs = this.options.script.global_defs
     let result = uglifyJS.minify(code, uglifyOptions)
     // @ts-ignore
     if (result.error) {
       // @ts-ignore
       throw result.error
     }
-    if (this.options.map && result.map) {
-      code += `\n//# sourceMappingURL=${result.map}`
+    return {
+      map: result.map,
+      code: result.code
     }
-    this.contents = result.code
   }
   processRegex([name, g]: string[]) {
     if (name) {

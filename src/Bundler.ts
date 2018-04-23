@@ -8,7 +8,6 @@ import * as glob from 'glob'
 import { EventEmitter } from "events";
 import { mkdirp } from "fs-extra";
 import WorkerFarm from "./WorkerFarm";
-import HTMLMainAsset from "./assets/HTMLMainAsset";
 import * as Path from 'path'
 
 export default class Bundler extends EventEmitter {
@@ -160,7 +159,8 @@ export default class Bundler extends EventEmitter {
     }
   }
   async addMainAsset(name: string) {
-    var asset = await this.resolveAsset(name, undefined, HTMLMainAsset)
+    var asset = await this.resolveAsset(name)
+    asset.isSingleFile = true
     this.mainAssets.add(asset)
     this.buildQueue.add(asset)
     return asset

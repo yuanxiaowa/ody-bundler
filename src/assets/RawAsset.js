@@ -5,6 +5,7 @@ class RawAsset extends Asset_1.default {
     init() {
         super.init();
         this.outDir = 'assets';
+        this.encoding = null;
     }
 }
 exports.default = RawAsset;

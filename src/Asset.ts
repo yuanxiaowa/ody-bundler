@@ -262,7 +262,7 @@ export default class Asset extends EventEmitter {
       if (type === 'html') {
         return `{{${this.options.dynamicDomain}}}${url}`
       } else if (type === 'js') {
-        return `window["${this.options.dynamicDomain}"]+'${url}'`
+        return `${this.options.dynamicDomain}+'${url}'`
       }
     } else if (type === 'js') {
       return `'${url}'`
@@ -310,7 +310,7 @@ export default class Asset extends EventEmitter {
       let keepLocal = true
       let deployer = this.options.deployer
       if (deployer) {
-        keepLocal = !!deployer.keepLocal
+        keepLocal = !deployer.handlers || !!deployer.keepLocal
         if (deployer.handlers) {
           deployer.handlers.forEach(handler => {
             let url: any
@@ -335,7 +335,7 @@ export default class Asset extends EventEmitter {
         }
       }
       if (keepLocal) {
-        let path = Path.join(this.options.outDir, this.generatedPath)
+        let path = Path.resolve(this.options.outDir, this.generatedPath)
         await ensureDir(Path.dirname(path))
         await writeFile(path, content)
       }

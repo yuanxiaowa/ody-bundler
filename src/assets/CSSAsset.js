@@ -76,7 +76,7 @@ class CSSAsset extends Asset_1.default {
                                     loc: decl.source.start
                                 }, ImageAsset_1.default);
                                 _promises.push(asset.process().then(() => {
-                                    node.nodes[0].value = asset.generatedPath;
+                                    node.nodes[0].value = asset.generatedUrl;
                                 }));
                             }
                         }

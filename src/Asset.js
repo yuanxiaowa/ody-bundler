@@ -22,6 +22,7 @@ class Asset extends events_1.EventEmitter {
         this.isSingleFile = false;
         this.packaged = false;
         this.skipTransform = false;
+        this.isMain = false;
         this.packaging = false;
         this.options = bundler.options;
         this.basename = Path.basename(name);
@@ -262,7 +263,7 @@ class Asset extends events_1.EventEmitter {
                 return `{{${this.options.dynamicDomain}}}${url}`;
             }
             else if (type === 'js') {
-                return `window["${this.options.dynamicDomain}"]+'${url}'`;
+                return `${this.options.dynamicDomain}+'${url}'`;
             }
         }
         else if (type === 'js') {
@@ -310,7 +311,7 @@ class Asset extends events_1.EventEmitter {
             let keepLocal = true;
             let deployer = this.options.deployer;
             if (deployer) {
-                keepLocal = !!deployer.keepLocal;
+                keepLocal = !deployer.handlers || !!deployer.keepLocal;
                 if (deployer.handlers) {
                     deployer.handlers.forEach(handler => {
                         let url;
@@ -338,7 +339,7 @@ class Asset extends events_1.EventEmitter {
                 }
             }
             if (keepLocal) {
-                let path = Path.join(this.options.outDir, this.generatedPath);
+                let path = Path.resolve(this.options.outDir, this.generatedPath);
                 await fs_extra_1.ensureDir(Path.dirname(path));
                 await fs_extra_1.writeFile(path, content);
             }
